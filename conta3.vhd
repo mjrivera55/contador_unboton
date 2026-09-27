@@ -18,15 +18,19 @@ architecture act of contador is
 
 
  -- Señales invertidas para trabajar internamente con '1' activo
-    signal rst_h      : std_logic;
-    signal start_h    : std_logic;
-    signal stop_h     : std_logic;
+    signal ssr_h      : std_logic;
 
 
     signal wire_tic     : std_logic;
     signal running      : std_logic := '0';
     signal limite_total  : std_logic;
-
+	 signal rst_interno : std_logic :='0';
+	 
+	 -- Contador de tiempo para el botón (2 segundos = 2 pulsos de wire_tic)
+    signal t_press      : integer range 0 to 3 := 0;
+    signal btn_prev     : std_logic := '0';
+	 
+	 
     signal limt_sec_u   : std_logic;
     signal limt_sec_t   : std_logic;
     signal limt_min_u   : std_logic;
@@ -41,33 +45,38 @@ architecture act of contador is
 
 begin
 
- -- Adaptación de Entradas Activas en Bajo ('0' presionado -> '1' interno)
+ -- Adaptación de Entrada Activas en Bajo ('0' presionado -> '1' interno)
 	ssr_h<= not ssr;
 
 -- DIVISOR DE RELOJ OBLIGATORIO PARA 50 MHz
 	U_DIV_1S: divisor_1s
         port map (
             clk   => clk,
-            reset => ssr_h,
+            reset => '0',
             tic   => wire_tic
         );
 	
 
-	 
-  -- control marcha/parada 
- process (clk,rst_h)
-	begin
-		if rst_h= '1' then
-			running <='0';
-		elsif rising_edge(clk) then
-		 if start_h='1' then
-		 running <='1';
-		 elsif stop_h ='1' or limite_total= '1' then
-		 running <='0';
-		 end if;
-		end if;
-	end process;
+ -- control marcha/parada 
+ 
+ process (clk)
+   begin
+	 if rising_edge(clk) then
+		rst_interno <='0';
+		
+    if wire_tic = '1' then
+                btn_prev <= ssr_h;
+
+                if btn_h = '1' then
+                    -- Si el botón sigue presionado, incrementa contador de tiempo
+                    if t_press < 3 then
+                        t_press <= t_press + 1;
+                    end if;
+
 	
+  
+  
+  
 -- Límite máximo: 9 min : 59 sec
 limite_total <= '1' when (bcd_min_u = "1001" and bcd_sec_t = "0101" and bcd_sec_u = "1001") else '0';
 
@@ -81,7 +90,7 @@ limite_total <= '1' when (bcd_min_u = "1001" and bcd_sec_t = "0101" and bcd_sec_
         generic map ( BITS => 4 )
         port map (
             clk    => clk,
-            rst    => rst_h,
+            rst    => rst_interno,
             enable => en_sec_u,
             mod_n  => to_unsigned(10, 4),
             q      => bcd_sec_u,
@@ -92,7 +101,7 @@ limite_total <= '1' when (bcd_min_u = "1001" and bcd_sec_t = "0101" and bcd_sec_
         generic map ( BITS => 4 )
         port map (
             clk    => clk,
-            rst    => rst_h,
+            rst    => rst_interno,
             enable => en_sec_t,
             mod_n  => to_unsigned(6, 4),
             q      => bcd_sec_t,
@@ -103,7 +112,7 @@ limite_total <= '1' when (bcd_min_u = "1001" and bcd_sec_t = "0101" and bcd_sec_
         generic map ( BITS => 4 )
         port map (
             clk    => clk,
-            rst    => rst_h,
+            rst    => rst_interno,
             enable => en_min_u,
             mod_n  => to_unsigned(10, 4),
             q      => bcd_min_u,
