@@ -64,11 +64,8 @@ begin
 	 if rising_edge(clk) then
 		rst_interno <='0';
 		
-    if wire_tic = '1' then
-                btn_prev <= ssr_h;
-
-                if ssr_h = '1' then
-                    -- Si el botón sigue presionado, incrementa contador de tiempo
+    if wire_tic = '1' and ssr_h = '1' then
+	 
                     if t_press < 3 then
                         t_press <= t_press + 1;
                     end if;
@@ -77,16 +74,18 @@ begin
                         rst_interno <= '1';
                         running     <= '0';
                     end if;
-                else
+						end if;
+                
                     -- Al soltar el botón:
+						  if ssr_h = '0' then
                     if btn_prev = '1' and t_press < 2 then
                         -- Fue una pulsación corta -> Alterna Start/Stop
-                        running <= not running;
+                        running <= not running;	
                     end if;
-                    
-                    -- Reinicia el medidor de tiempo del botón
-                    t_press <= 0;
-                end if;
+             t_press  <= 0;
+             btn_prev <= '0';
+                else
+					 btn_prev <= '1';
             end if;
 
             -- Si se alcanza el límite del temporizador, se detiene
