@@ -14,7 +14,7 @@ entity conta3 is
     );
 end conta3;
 
-architecture act of contador is
+architecture act of conta3 is
 
 
  -- Señales invertidas para trabajar internamente con '1' activo
@@ -67,13 +67,35 @@ begin
     if wire_tic = '1' then
                 btn_prev <= ssr_h;
 
-                if btn_h = '1' then
+                if ssr_h = '1' then
                     -- Si el botón sigue presionado, incrementa contador de tiempo
                     if t_press < 3 then
                         t_press <= t_press + 1;
                     end if;
+	                 -- Si se mantiene pulsado durante 2 segundos o más -> RESET
+                    if t_press >= 2 then
+                        rst_interno <= '1';
+                        running     <= '0';
+                    end if;
+                else
+                    -- Al soltar el botón:
+                    if btn_prev = '1' and t_press < 2 then
+                        -- Fue una pulsación corta -> Alterna Start/Stop
+                        running <= not running;
+                    end if;
+                    
+                    -- Reinicia el medidor de tiempo del botón
+                    t_press <= 0;
+                end if;
+            end if;
 
-	
+            -- Si se alcanza el límite del temporizador, se detiene
+            if limite_total = '1' then
+                running <= '0';
+            end if;
+        end if;
+    end process;
+
   
   
   
@@ -128,5 +150,4 @@ limite_total <= '1' when (bcd_min_u = "1001" and bcd_sec_t = "0101" and bcd_sec_
   punto_dp <= '0';
 	 
 end architecture;
-
 
